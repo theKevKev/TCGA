@@ -3,56 +3,63 @@ library(dplyr)
 # This should be the directory of the user's path where the TCGA files are stored
 working.directory <- "/Users/home/Desktop/Cancer Datasets"
 
-#' Extract TCGA Data
-#'
-#' @param working.directory a string of the path where the TCGA files are stored
-#' @param cancer.types the set of cancers to use, as a list of strings
-#' @param data.types the set of files to extract per cancer, as a list of strings
-#'
-#' @return a list of data frames of the raw data
-tcga_data_from_files <- function(
+raw_data_from_file_paths <- function(
+    cancer, 
     working.directory, 
-    cancer.types = c("aml", "breast", "colon", "gbm", "kidney", "liver", "lung", "melanoma", "ovarian", "sarcoma"), 
     data.types = c("exp", "methy", "mirna", "survival")
 ) {
   data.list <- list()
   
-  for (cancer in cancer.types) {
-    for (data in data.types) {
-      file.path <- file.path(working.directory, cancer, data)
-      data.name <- paste(cancer, data, sep = ".")
-      data.list[[data.name]] <- read.table(file.path)
-    }
-    print(paste('Finished reading: ', cancer))
+  for (data in data.types) {
+    file.path <- file.path(working.directory, cancer, data)
+    data.name <- paste(cancer, data, sep = ".")
+    data.list[[data.name]] <- read.table(file.path)
   }
+  print(paste('Finished reading: ', cancer))
   
-  return(data.list)
+  return (data.list)
 }
 
-rename_tcga_data <- function(tcga.data) {
-  for (name in names(tcga.data)) {
-    raw.data <- tcga.data[[name]]
+fix_patient_id_names <- function(data) {
+  for (name in names(data)) {
+    data.set <- data[[name]]
     
-    if(grepl("survival", name, fixed = TRUE)) {
+    if (grepl("survival", name, fixed = TRUE)) {
       # Set the column names using the second row
-      colnames(raw.data) <- raw.data[1,]
-      raw.data <- raw.data[-1,]
+      colnames(data.set) <- data.set[1,]
+      data.set <- data.set[-1,]
+
+      # Formatting of PatientID
+      data.set$PatientID <- data.set$PatientID %>% 
+        toupper() %>% 
+        chartr(old = "-", new = ".") %>% 
+        sub("^(([^.]*\\.){2}[^.]*).*", "\\1", .)
+      
+      data.set <- data.set %>% 
+        distinct() %>% 
+        filter(Survival != "" & Death != "")
     } else { # non-survival data table
       # Transpose for consistency
-      raw.data <- t(raw.data)
-      raw.data <- as.data.frame(raw.data)
+      data.set <- t(data.set)
+      data.set <- as.data.frame(data.set)
     }
     
-    tcga.data[[name]] <- raw.data
+    data[[name]] <- data.set
   }
   
-  return(tcga.data)
+  return (data)
 }
 
-tcga.data <- tcga_data_from_files(working.directory)
-renamed.tcga.data <- rename_tcga_data(tcga.data)
-
-for(name in names(tcga.data)) {
-  data <- tcga.data[[name]]
-  print(paste(name, any(is.na(data))))
+formatted.data <- list()
+cancers <- c("aml", "breast", "colon", "gbm", "kidney", "liver", "lung", "melanoma", "ovarian", "sarcoma")
+for (cancer in cancers) {
+  # Extract data from files
+  raw.data <- raw_data_from_file_paths(cancer, working.directory)
+  
+  # Patient ID formatting
+  raw.data <- fix_patient_id_names(raw.data)
+  # clean data
+  
+  # Place in bucket or smth
+  formatted.data[[cancer]] <- raw.data
 }
