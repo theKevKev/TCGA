@@ -9,11 +9,8 @@ load_cleaning_functions <- function() {
   source("clean_exp.R")
   source("clean_methy.R")
   source("clean_mirna.R")
+  print("Loading Functions Completed")
 }
-
-cancers <- c("aml", "breast", "colon", "gbm", "kidney", "liver", "lung", "melanoma", "ovarian", "sarcoma")
-datasets <- c("exp", "methy", "mirna", "survival")
-base_path <- "/Users/home/Desktop/Cancer Datasets"
 
 #' Extract and Clean TCGA Data
 #'
@@ -29,7 +26,12 @@ base_path <- "/Users/home/Desktop/Cancer Datasets"
 #'
 #' @return A collection of cleaned data sets, represented as a list of list of 
 #' data frames, arranged by cancer and cleaned according to data type
+#' 
+#' @examples 
+#' cleaned_data_list <- extract_and_clean_data(cancers, datasets, base_path)
 extract_and_clean_data <- function(cancers, datasets, base_path) {
+  load_cleaning_functions()
+  
   cleaned_data_list <- list()
   
   # Iterate over each dataset
@@ -47,6 +49,7 @@ extract_and_clean_data <- function(cancers, datasets, base_path) {
       # Clean the data based on the type of file
       cleaned_data <- switch(data_name, 
         "exp"      = {
+          print("Reading expression data...")
           # Convert the data to a data frame and transpose it
           data <- as.data.frame(t(pure_data))
           
@@ -54,6 +57,7 @@ extract_and_clean_data <- function(cancers, datasets, base_path) {
           clean_exp(data)
         }, 
         "methy"    = {
+          print("Reading methylation data...")
           # Convert the data to a data frame and transpose it
           data <- as.data.frame(t(pure_data))
           
@@ -61,6 +65,7 @@ extract_and_clean_data <- function(cancers, datasets, base_path) {
           clean_methy(data)
         }, 
         "mirna"    = {
+          print("Reading micro RNA data...")
           # Convert the data to a data frame and transpose it
           data <- as.data.frame(t(pure_data))
           
@@ -68,6 +73,7 @@ extract_and_clean_data <- function(cancers, datasets, base_path) {
           clean_mirna(data)
         }, 
         "survival" = {
+          print("Reading survival data...")
           # Set the column names using the second row
           data <- pure_data
           colnames(data) <- data[1,]
@@ -90,13 +96,21 @@ extract_and_clean_data <- function(cancers, datasets, base_path) {
       )
       
       cancer[[data_name]] <- cleaned_data
+      print(paste0("Finished Reading: ", data_name))
     }
     
     # Store the cleaned data in the list
     cleaned_data_list[[cancer_name]] <- cancer
-    print(paste0("Finished Reading: ", cancer))
+    print(paste0("Finished Reading: ", cancer_name))
   }
   return (cleaned_data_list)
 }
 
-extract_and_clean_data
+## ================================================
+## ============ Example Implementation ============
+## ================================================
+# cancers <- c("aml", "breast", "colon", "gbm", "kidney", "liver", "lung", "melanoma", "ovarian", "sarcoma")
+# datasets <- c("exp", "methy", "mirna", "survival")
+# base_path <- "/Users/home/Desktop/Cancer Datasets"
+# 
+# cleaned_data_list <- extract_and_clean_data(cancers, datasets, base_path)
