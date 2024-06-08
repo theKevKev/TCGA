@@ -51,21 +51,3 @@ rename_tcga_data <- function(tcga.data) {
 
 tcga.data <- tcga_data_from_files(working.directory)
 renamed.tcga.data <- rename_tcga_data(tcga.data)
-
-for(name in names(tcga.data)) {
-  data <- tcga.data[[name]]
-  if(grepl("survival", name, fixed = TRUE)) {
-    print("------")
-  } else { # non-survival data table
-    print(paste(name, any(is.na(data))))
-  }
-}
-
-
-# sum(duplicated(renamed.tcga.data[["lung.survival"]])) == sum(duplicated(renamed.tcga.data[["lung.survival"]]$PatientID))
-any(endsWith(rownames(renamed.tcga.data[["aml.mirna"]]), '1'))
-
-print(endsWith(rownames(renamed.tcga.data[["breast.methy"]]), ".01"))
-endsWith("TCGA.3C.AAAU.01", ".01")
-rownames(renamed.tcga.data[[]])
-
