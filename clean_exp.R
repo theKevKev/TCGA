@@ -45,12 +45,7 @@ clean_exp <- function(data,
   }
   
   # Aggregate Gene Column Data 
-  if (removeUnknownMarkers) {
-    data <- remove_duplicate_genes(data)
-  } else {
-    # remove_duplicate_genes_with_X..(data) # Not Implemented!!
-    stop("Unknown Markers not processed")
-  }
+  data <- remove_duplicate_genes(data)
   
   if (norm) {
     data <- scale(data)

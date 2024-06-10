@@ -8,6 +8,7 @@ load_cleaning_functions <- function() {
   source("clean_exp.R")
   source("clean_methy.R")
   source("clean_mirna.R")
+  source("basic_clean.R")
   print("Loading Functions Completed")
 }
 
@@ -22,13 +23,19 @@ load_cleaning_functions <- function() {
 #' @param base_path The base path directory in which the TCGA data is stored 
 #' (assumes all TCGA data was inserted into one folder), 
 #' ex. /.../Desktop/Cancer Data
+#' @param norm Default true, normalizes the cleaned data
 #'
 #' @return A collection of cleaned data sets, represented as a list of list of 
 #' data frames, arranged by cancer and cleaned according to data type
 #' 
 #' @examples 
 #' cleaned_data_list <- extract_and_clean_data(cancers, datasets, base_path)
-extract_and_clean_data <- function(cancers, datasets, base_path) {
+extract_and_clean_data <- function(cancers = c("aml", "breast", "colon", "gbm", "kidney", "liver", "lung", "melanoma", "ovarian", "sarcoma"), 
+                                   datasets = c("exp", "methy", "mirna", "survival"), 
+                                   base_path, 
+                                   aggregateDifferentLocuses = FALSE, 
+                                   onlyHumanMiRNA = FALSE, 
+                                   norm = TRUE) {
   load_cleaning_functions()
   
   cleaned_data_list <- list()
@@ -52,24 +59,68 @@ extract_and_clean_data <- function(cancers, datasets, base_path) {
           # Convert the data to a data frame and transpose it
           data <- as.data.frame(t(pure_data))
           
-          # Clean the data using the clean_exp function and return it
-          clean_exp(data)
+          # Standardize Gene Formatting 
+          colnames(data) <- colnames(data) %>% 
+            sub("\\|", ".", .) %>% 
+            sub("\\?", "X.", .)
+          
+          # Remove Unknown Marker Columns
+          data <- data[!grepl("X..", colnames(data), fixed = TRUE)]
+          
+          data <- basic_clean(data)
+          
+          # Aggregate Gene Column Data 
+          data <- remove_duplicate_genes(data)
+          
+          # Normalize
+          if (norm) {
+            data <- scale(data)
+            data <- as.data.frame(data)
+          }
         }, 
         "methy"    = {
           print("Reading methylation data...")
           # Convert the data to a data frame and transpose it
           data <- as.data.frame(t(pure_data))
           
-          # Clean the data using the clean_exp function
-          clean_methy(data)
+          # Add tag of "cg_" if doesn't already start with "cg
+          colnames(data) <- ifelse(grepl("^cg", colnames(data)), 
+                                   colnames(data), 
+                                   paste0("cg_", colnames(data)))
+          
+          data <- basic_clean(data)
+          
+          if (norm) {
+            data <- scale(data)
+            data <- as.data.frame(data)
+          }
         }, 
         "mirna"    = {
           print("Reading micro RNA data...")
           # Convert the data to a data frame and transpose it
           data <- as.data.frame(t(pure_data))
           
-          # Clean the data using the clean_exp function
-          clean_mirna(data)
+          # Standardize micro RNA Formatting 
+          colnames(data) <- colnames(data) %>% 
+            gsub("\\.", "-", .) %>% 
+            sub("miR", "mir", .)
+          
+          # Remove Unknown Marker Columns
+          if (onlyHumanMiRNA) {
+            data <- data[grepl("hsa-let", colnames(data), fixed = TRUE) | grepl("hsa-mir", colnames(data), fixed = TRUE)]
+          }
+          
+          data <- basic_clean(data)
+          
+          # Aggregate Gene Column Data 
+          if (aggregateDifferentLocuses) {
+            data <- combine_different_locuses(data)
+          } 
+          
+          if (norm) {
+            data <- scale(data)
+            data <- as.data.frame(data)
+          }
         }, 
         "survival" = {
           print("Reading survival data...")
@@ -112,16 +163,4 @@ extract_and_clean_data <- function(cancers, datasets, base_path) {
 # datasets <- c("exp", "methy", "mirna", "survival")
 # base_path <- "/Users/home/Desktop/Cancer Datasets"
 # 
-# cleaned_data_list <- extract_and_clean_data(cancers, datasets, base_path)
-
-load_cleaning_functions <- function() {
-  source("clean_exp.R")
-  source("clean_methy.R")
-  source("clean_mirna.R")
-}
-
-cancers <- c("aml", "breast", "colon", "gbm", "kidney", "liver", "lung", "melanoma", "ovarian", "sarcoma")
-datasets <- c("exp", "methy", "mirna", "survival")
-base_path <- "/Users/home/Desktop/Cancer Datasets"
-
 # cleaned_data_list <- extract_and_clean_data(cancers, datasets, base_path)

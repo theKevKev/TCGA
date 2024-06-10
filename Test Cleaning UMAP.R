@@ -95,7 +95,7 @@ df1 <- sarcoma_data[["sarcoma"]][["exp"]]
 df2 <- sarcoma_data[["sarcoma"]][["methy"]]
 df3 <- sarcoma_data[["sarcoma"]][["mirna"]]
 
-cleaned_ubmi <- ubmi(list(df1, df2, df3))
+cleaned_ubmi <- ubmi(list(df1, df2, df3), combined_omics = TRUE)
 
 df1$row_name <- rownames(df1)
 df2$row_name <- rownames(df2)
