@@ -1,6 +1,7 @@
 library(tools)
 library(ubmi)
 library(patchwork)
+library(ggplot2)
 source("Overall Cleaning Script.R")
 
 cancers <- c("aml", "breast", "colon", "gbm", "kidney", "liver", "lung", "melanoma", "ovarian", "sarcoma")
@@ -12,6 +13,9 @@ output_path <- "/Users/home/TCGA/Cancer Plots"
 if (!dir.exists(output_path)) {
   dir.create(output_path)
 }
+
+timely_path <- file.path(output_path, format(Sys.time(), "%Y-%m-%d %H-%M-%S"))
+dir.create(timely_path)
 
 cleaned_data <- extract_and_clean_data(cancers, datasets, base_path)
 
@@ -39,7 +43,7 @@ for (cancer in cancers) {
   ubmi_grid_plot <- ubmi::plot_ubmi_grid(cleaned_ubmi) + 
     plot_annotation(title = (toTitleCase(paste(cancer, ": UBMI Grid"))))
   
-  subfolder_path <- file.path(output_path, cancer)
+  subfolder_path <- file.path(timely_path, cancer)
   
   # Create the subfolder if it doesn't exist
   if (!dir.exists(subfolder_path)) {
@@ -67,5 +71,9 @@ silhouette_scores_df <- silhouette_scores_df[order(silhouette_scores_df$Silhouet
 # Print the ranking
 print(silhouette_scores_df)
 
+write.csv(silhouette_scores_df, file.path(timely_path, "silhouettes"), row.names = FALSE)
+
 # Store the UBMI objects in a named list
-ubmi_objects <- ubmi_objects[names(silhouette_scores_df$Cancer)]
+sorted_ubmi_results <- ubmi_results[silhouette_scores_df$Cancer]
+
+save(sorted_ubmi_results, file = file.path(timely_path, "ubmi_results"))

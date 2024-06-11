@@ -5,10 +5,10 @@ library(dplyr)
 #' Loads the necessary different cleaning functions for TCGA expression, 
 #' methylation, and miRNA data to homogenize and clean all files. 
 load_cleaning_functions <- function() {
-  source("clean_exp.R")
-  source("clean_methy.R")
-  source("clean_mirna.R")
-  source("basic_clean.R")
+  source("Necessary Helper R Scripts/clean_exp.R")
+  source("Necessary Helper R Scripts/clean_methy.R")
+  source("Necessary Helper R Scripts/clean_mirna.R")
+  source("Necessary Helper R Scripts/basic_clean.R")
   print("Loading Functions Completed")
 }
 
