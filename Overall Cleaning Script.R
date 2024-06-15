@@ -70,7 +70,7 @@ extract_and_clean_data <- function(cancers = c("aml", "breast", "colon", "gbm", 
           data <- basic_clean(data)
           
           # Aggregate Gene Column Data 
-          data <- remove_duplicate_genes(data)
+          # data <- remove_duplicate_genes(data)
           
           # Normalize
           if (norm) {
