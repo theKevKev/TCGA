@@ -163,4 +163,4 @@ extract_and_clean_data <- function(cancers = c("aml", "breast", "colon", "gbm", 
 # datasets <- c("exp", "methy", "mirna", "survival")
 # base_path <- "/Users/home/Desktop/Cancer Datasets"
 # 
-# cleaned_data_list <- extract_and_clean_data(cancers, datasets, base_path)
+# cleaned_data <- extract_and_clean_data(cancers, datasets, base_path)
