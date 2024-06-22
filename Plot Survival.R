@@ -2,7 +2,27 @@ library(dplyr)
 library(stringr)
 library(rlang)
 
-# Function to perform the join with an option for partial matching
+#' Lenient Left Join
+#'
+#' Function to perform the join with an option for partial matching, capable of
+#' adding one column from the second data frame. Attempts a basic left join of 
+#' the second data frame, but if no matches occur or allow_partial_match = TRUE, 
+#' performs a secondary join on remaining elements looking for PatientIDs ('by') 
+#' that are substrings in the second column
+#' 
+#' @param df1 Main data frame, should have a column with a title string 
+#' designated using the 'by' parameter
+#' @param df2 Data frame with column to append, should have one column with 
+#' title string 'by' and another with title string 'on'. 
+#' @param by String to match joining, should be in both df1 and df2. Items in 
+#' df2 under column 'by' can be partial strings of items in df1$by
+#' @param on String of column to append to first data frame, present in df2
+#' @param allow_partial_match toggleable, if TRUE, fills in blanks of initial 
+#' join with the first parameter found in df2 that is a partial substring. 
+#' Warning: if an item in df2$by is a short string or single character, could 
+#' potentially match with too many items in df1. 
+#'
+#' @return a data frame, essentially df1 joined with df2$on
 survival_left_join <- function(df1, df2, 
                                by = "PatientID", 
                                on = "Survival", 
@@ -40,6 +60,19 @@ survival_left_join <- function(df1, df2,
   return(result)
 }
 
+#' Plot Overlay Survival
+#'
+#' Plots the patients in a factor plot of 2 dimensions (UBMI1, UBMI2), with
+#' labeling by survival rather than by cluster
+#'
+#' @param surv_by_cluster A list generated during the plot_survival function 
+#' call, should have a column named "clust" holding cluster identification, a 
+#' column named "Survival". Survival should be numeric type
+#' @param ubmi_object A UBMI Object as designated by the UBMI package
+#' @param cancer A string for identification when saving data
+#' @param file_path path to save file to, unneeded if save_data = FALSE
+#' @param save_data toggle of whether to save data, if FALSE, will plot to 
+#' console
 plot_overlay_survival <- function(surv_by_cluster, ubmi_object, cancer, file_path, save_data = TRUE) {
   # Extract Survival column
   surv_vector <- as.numeric(surv_by_cluster$Survival)
@@ -69,6 +102,21 @@ plot_overlay_survival <- function(surv_by_cluster, ubmi_object, cancer, file_pat
   }
 }
 
+
+#' Plot Kaplan-Meier Curves
+#' 
+#' Function that creates and saves (or plots) Kaplan-Meier Survival Curves
+#'
+#' @param surv_by_cluster A list generated during the plot_survival function 
+#' call, should have a column named "clust" holding cluster identification, a 
+#' column named "Survival", and a column named "Death". Survival and Death 
+#' should follow standard conventions and be numeric type
+#' @param cancer A string for identification when saving data
+#' @param most_different_clusters togglable, if TRUE, will only plot the two 
+#' survival curves with the minimum and maximum median survival
+#' @param file_path path to save file to, unneeded if save_data = FALSE
+#' @param save_data toggle of whether to save data, if FALSE, will plot to 
+#' console
 plot_kaplan_meier <- function(surv_by_cluster, 
                               cancer, 
                               most_different_clusters = FALSE, 
@@ -164,17 +212,22 @@ plot_kaplan_meier <- function(surv_by_cluster,
 #' is FALSE
 #' @param save_data whether to save data to a file
 #' @param overlay_plot whether to include the overlay survival plot
-#' @param elbow_plot whether to include the elbow (by cluster) plot
+#' @param kaplan_meier_plot whether to include the Kaplan-Meier (regular and 
+#' only extremes) plot, organized by cluster
 plot_survival <- function(cleaned_data, 
                           sorted_ubmi_results, 
                           only_first_n = 0, 
                           overlay_plot = TRUE, 
-                          elbow_plot = TRUE, 
+                          kaplan_meier_plot = TRUE, 
                           file_path, 
                           save_data = TRUE) {
   if (is.null(file_path)) {
     save_data <- FALSE
     warning("File path was NULL, save_data converted to FALSE")
+  }
+  
+  if (!overlay_plot & !kaplan_meier_plot) {
+    stop("What do you even want to plot then?")
   }
   
   num_plots <- length(sorted_ubmi_results)
@@ -200,13 +253,17 @@ plot_survival <- function(cleaned_data,
       survival_left_join(., surv, on = "Death")
     
     # Overlay Plot
-    plot_overlay_survival(surv_by_cluster, ubmi_object, cancer, file_path, save_data)
-    print(paste("Overlay survival plot saved for:", cancer))
+    if (overlay_plot) {
+      plot_overlay_survival(surv_by_cluster, ubmi_object, cancer, file_path, save_data)
+      print(paste("Overlay survival plot saved for:", cancer))
+    }
     
     # Kaplan-Meier Plot
-    plot_kaplan_meier(surv_by_cluster, cancer, most_different_clusters = TRUE, file_path, save_data)
-    plot_kaplan_meier(surv_by_cluster, cancer, most_different_clusters = FALSE, file_path, save_data)
-    print(paste("Kaplan-Meier plots saved for:", cancer))
+    if (kaplan_meier_plot) {
+      plot_kaplan_meier(surv_by_cluster, cancer, most_different_clusters = TRUE, file_path, save_data)
+      plot_kaplan_meier(surv_by_cluster, cancer, most_different_clusters = FALSE, file_path, save_data)
+      print(paste("Kaplan-Meier plots saved for:", cancer))
+    }
   }
   
   print("All Plots Computed! ")

@@ -1,6 +1,6 @@
 source("Overall Cleaning Script.R")
 source("Compute UBMI.R")
-source("plot_survival.R")
+source("Plot Survival.R")
 
 base_path <- "/Users/home/Desktop/Cancer Datasets"
 output_path <- "/Users/home/TCGA/Cancer Plots"
